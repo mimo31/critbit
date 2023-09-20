@@ -5,7 +5,7 @@ Require Import PeanoNat.
 
 From CritBit Require Import GenerUtil.
 From CritBit Require Import KeyUtil.
-From CritBit Require Import SeqAccess. 
+From CritBit Require Import SeqAccess.
 
 (* --- prefix related below --- *)
 

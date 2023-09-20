@@ -56,15 +56,11 @@ Require Import Arith.
 Require Import Arith.Compare.
 Require Import Logic.FunctionalExtensionality.
 
+From CritBit Require Import Front.
 From CritBit Require Import GenerUtil.
 From CritBit Require Import KeyUtil.
 From CritBit Require Import PrefixCritical.
 From CritBit Require Import SeqAccess.
-
-(* a CBT (non-empty) *)
-Inductive CBT {X : Type} : Type :=
-  | Leaf (k : list bool) (v : X)
-  | Branch (i : nat) (l r : CBT).
 
 (* an augmented CBT tree (non-empty) *)
 Inductive augCBT {X : Type} : Type :=
@@ -96,50 +92,7 @@ Inductive CBT_valid {X : Type} : (@CBT X) -> Prop :=
   | cv (t : CBT) (aut : augCBT)
     (H1: strip_augCBT aut = t) (H2: augCBT_valid aut) : CBT_valid t.
 
-Definition seed_CBT {X : Type} (k : list bool) (v : X) : CBT :=
-  Leaf k v.
-
-Definition empty_map {X : Type} (k : list bool) :=
-  @None X.
-
-Definition insert_map
-  {X : Type} (k : list bool) (v : X) (m : (list bool) -> option X) (k' : list bool) :=
-  if key_eqb k' k then Some v else m k'.
-
-(* precond: one-terminated k *)
-(* precond: t is a valid tree w.r.t. CBT_valid *)
-Fixpoint lookup {X : Type} (k : list bool) (t : CBT) : option X :=
-  match t with
-  | Leaf k' v => if key_eqb k k' then Some v else None
-  | Branch i l r => if ith_zer i k then lookup k r else lookup k l
-  end.
-
-Definition content {X : Type} (t : CBT) (k : list bool) := @lookup X k t.
-
-Definition equal_content {X : Type} (c1 c2 : (list bool) -> option X) : Prop :=
-  forall k, (OneTerminated k) -> c1 k = c2 k.
-
 Definition content_aug {X : Type} (aut : augCBT) (k : list bool) := @lookup X k (strip_augCBT aut).
-
-Theorem seeded_spec : forall (X : Type) (k : list bool) (v : X) (k' : list bool),
-  (OneTerminated k) ->
-  (OneTerminated k') ->
-  (CBT_valid (seed_CBT k v) /\ equal_content (content (seed_CBT k v)) (insert_map k v empty_map)).
-Proof.
-  intros X k v k' Hotk Hotk'.
-  simpl.
-  split.
-  - apply cv with (AugLeaf k v).
-    + unfold seed_CBT. reflexivity.
-    + apply (acv_leaf _ _ Hotk).
-  - unfold equal_content. intros k0 _. unfold insert_map. unfold empty_map. reflexivity.
-Qed.
-
-Fixpoint find_best_key {X : Type} (k : list bool) (t : @CBT X) : (list bool) :=
-  match t with
-  | Leaf k' _ => k'
-  | Branch i l r => find_best_key k (if ith_zer i k then r else l)
-  end.
 
 Lemma find_key_has_prefix : forall (X : Type) (k p : list bool) (l r : augCBT),
   (augCBT_valid (AugBranch p l r)) ->
@@ -165,40 +118,6 @@ Proof.
         apply app_is_prefix_fin in H2. apply prefix_zer_trans with p0. exact H2.
         rewrite H in IHE1. exact IHE1.
 Qed.
-
-Definition critical_bit_CBT {X : Type} (k : list bool) (t : @CBT X) : option nat :=
-  critical_bit_zer k (find_best_key k t).
-
-Definition is_beforeb (pos : option nat) (bound : nat) : bool :=
-  match pos with
-  | None => false
-  | Some i => i <? bound
-  end.
-
-Definition insert_as_branch {X : Type} (k : list bool) (v : X) (i : nat) (t : CBT) : CBT :=
-  if ith_zer i k then Branch i t (Leaf k v) else Branch i (Leaf k v) t.
-
-(* precond: t is a valid tree w.r.t. CBT_valid *)
-(* precond: i is the critical bit of k w.r.t. t *)
-Fixpoint insert_at {X : Type} (k : list bool) (v : X) (i : option nat) (t : CBT) : CBT :=
-  match t with
-  | Leaf k' v' =>  match i with
-                   | None => Leaf k v
-                   | Some cbit => insert_as_branch k v cbit t
-                   end
-  | Branch j l r => if is_beforeb i j
-      then match i with
-           | None => Leaf k v (* never happens *)
-           | Some cbit => insert_as_branch k v cbit t
-           end
-      else (if ith_zer j k
-            then Branch j l (insert_at k v i r)
-            else Branch j (insert_at k v i l) r)
-  end.
-
-(* precond: one-terminated k *)
-Definition insert {X : Type} (k : list bool) (v : X) (t : CBT) : CBT :=
-  insert_at k v (critical_bit_CBT k t) t.
 
 Fixpoint critical_bit_augCBT {X : Type} (k : list bool) (aut : @augCBT X) : option nat :=
   match aut with
@@ -586,20 +505,4 @@ Lemma insert_aug_valid : forall (X : Type) (k : list bool) (v : X) (aut : augCBT
 Proof.
   intros X k v aut H1 H2. unfold insert. pose proof (insert_aug_match X k v aut [] H1 H2).
   specialize (H (ipfz1 _) (is_prefix_nil _)). destruct H as [H _]. exact H.
-Qed.
-
-Theorem insert_valid : forall (X : Type) (k : list bool) (v : X) (t : CBT),
-  (OneTerminated k) -> (CBT_valid t) -> CBT_valid (insert k v t).
-Proof.
-  intros X k v t H1 H2. inversion H2. rewrite <- H0. clear H0 H t0 H2.
-  rewrite <- (insert_aug_match_com _ _ _ _ H1 H3). apply (cv _ (insert_aug k v aut)).
-  reflexivity. apply (insert_aug_valid _ _ _ _ H1 H3).
-Qed.
-
-Theorem insert_content : forall (X : Type) (k : list bool) (v : X) (t : CBT),
-  (OneTerminated k) -> (CBT_valid t) ->
-  (equal_content (content (insert k v t)) (insert_map k v (content t))).
-Proof.
-  intros X k v t H1 H2. inversion H2. rewrite <- H0 in *. clear t0 H H0 H2 t.
-  rewrite <- (insert_aug_match_com _ _ _ _ H1 H3). apply (insert_content_aug _ _ _ _ H1 H3).
 Qed.
