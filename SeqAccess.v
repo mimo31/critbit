@@ -6,12 +6,7 @@ Require Import Bool.
 Require Import List.
 Import ListNotations.
 
-Fixpoint ith_zer (i : nat) (k : list bool) : bool :=
-  match k, i with
-  | nil, _         => false
-  | cons b k', 0   => b
-  | cons b k', S j => ith_zer j k'
-  end.
+Definition ith_zer (i : nat) (k : list bool) : bool := nth i k false.
 
 Lemma ith_zer_nil : forall (i : nat), ith_zer i [] = false.
 Proof.

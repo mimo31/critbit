@@ -352,10 +352,13 @@ Proof.
   - intros k1 k2 H. destruct k1.
     + destruct k2.
       * simpl in H. discriminate.
-      * simpl in H. simpl. intro H2. rewrite <- H2 in H. apply map_S_0 in H. exact H.
+      * simpl in H. simpl. intro H2. unfold ith_zer in H2. simpl in H2.
+        rewrite <- H2 in H. apply map_S_0 in H. exact H.
     + destruct k2.
-      * simpl in H. simpl. intro H2. rewrite H2 in H. apply map_S_0 in H. exact H.
-      * simpl in H. simpl. intro H2. rewrite H2 in H. rewrite eqb_reflx in H.
+      * simpl in H. simpl. intro H2. unfold ith_zer in H2. simpl in H2.
+        rewrite H2 in H. apply map_S_0 in H. exact H.
+      * simpl in H. simpl. intro H2. unfold ith_zer in H2. simpl in H2.
+        rewrite H2 in H. rewrite eqb_reflx in H.
         apply map_S_0 in H. exact H.
   - intros k1 k2 H. destruct k1.
     + destruct k2.
@@ -385,14 +388,17 @@ Proof.
       * simpl. simpl in H2. assert (b <> false). intro L. apply H2. rewrite L. reflexivity.
         apply not_false_is_true in H. rewrite H. simpl. reflexivity.
     + destruct k2.
-      * simpl. simpl in H2. apply not_false_is_true in H2. rewrite H2. reflexivity.
-      * simpl. simpl in H2. apply eqb_false_iff in H2. rewrite H2. reflexivity.
+      * simpl. simpl in H2. apply not_false_is_true in H2. unfold ith_zer in H2. simpl in H2.
+        rewrite H2. reflexivity.
+      * simpl. simpl in H2. apply eqb_false_iff in H2. unfold ith_zer in H2. simpl in H2.
+        rewrite H2. reflexivity.
   - intros k1 k2 H1 H2. destruct k1.
     + destruct k2.
       * simpl in H2. apply bneq_eq_neg in H2. simpl in H2. discriminate.
       * simpl in H2. apply bneq_eq_neg in H2. simpl in H2. simpl in H1. injection H1 as H1.
         simpl. rewrite <- H1. assert (critical_bit_zer [] k2 = Some i). {
-          apply IH. apply H. rewrite <- H2. rewrite ith_zer_nil. intro L. discriminate.
+          apply IH. apply H. unfold ith_zer in H2. simpl in H2. rewrite ith_zer_nil.
+          unfold ith_zer. rewrite <- H2. intro L. discriminate.
         } simpl in H0. rewrite H0. reflexivity.
     + destruct k2.
       * simpl. simpl in H1. simpl in H2. injection H1 as H1. rewrite H1.
@@ -419,7 +425,7 @@ Proof.
        -- simpl in H. apply map_S_0 in H. destruct H.
       * simpl in H. destruct (eqb b b0) eqn:E.
        -- apply map_S_0 in H. destruct H.
-       -- apply eqb_false_iff in E. apply bneq_eq_neg in E.
+       -- apply eqb_false_iff in E. apply bneq_eq_neg in E. unfold ith_zer. simpl.
           rewrite E. apply ipfz3. apply ipfz1.
   - intros p k H. destruct k.
     + destruct p.
