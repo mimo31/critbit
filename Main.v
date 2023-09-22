@@ -54,7 +54,7 @@ Require Import Nat.
 Require Import Bool.
 Require Import Arith.
 Require Import Arith.Compare.
-Require Import Logic.FunctionalExtensionality.
+Import ListNotations.
 
 From CritBit Require Import Front.
 From CritBit Require Import GenerUtil.

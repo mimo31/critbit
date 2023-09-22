@@ -4,8 +4,7 @@ Require Import Arith.
 Require Import Setoid.
 Require Import Bool.
 Require Import List.
-
-From CritBit Require Import GenerUtil.
+Import ListNotations.
 
 Fixpoint ith_zer (i : nat) (k : list bool) : bool :=
   match k, i with

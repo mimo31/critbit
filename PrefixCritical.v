@@ -2,6 +2,7 @@ Require Import Setoid.
 Require Import Bool.
 Require Import List. 
 Require Import PeanoNat.
+Import ListNotations.
 
 From CritBit Require Import GenerUtil.
 From CritBit Require Import KeyUtil.
