@@ -1,33 +1,31 @@
 From CritBit Require Import Front.
 From CritBit Require Import KeyUtil.
 From CritBit Require Import Main.
+From CritBit Require Import PrefixCritical.
 
-Theorem seeded_spec : forall (X : Type) (k : list bool) (v : X) (k' : list bool),
-  (OneTerminated k) ->
-  (OneTerminated k') ->
-  (CBT_valid (seed_CBT k v) /\ equal_content (content (seed_CBT k v)) (insert_map k v empty_map)).
+Require Import List.
+Import ListNotations.
+
+Theorem seed_spec : forall (X : Type) (k : list bool) (v : X),
+    OneTerminated k -> mCBT_valid (singleton k v) (seed k v).
 Proof.
-  intros X k v k' Hotk Hotk'.
-  simpl.
-  split.
-  - apply cv with (AugLeaf k v).
-    + unfold seed_CBT. reflexivity.
-    + apply (acv_leaf _ _ Hotk).
-  - unfold equal_content. intros k0 _. unfold insert_map. unfold empty_map. reflexivity.
+  intros. exists (ZeroExt k). constructor. assumption.
 Qed.
 
-Theorem insert_valid : forall (X : Type) (k : list bool) (v : X) (t : CBT),
-  (OneTerminated k) -> (CBT_valid t) -> CBT_valid (insert k v t).
+Theorem insert_spec : forall (X : Type) (k : list bool) (v : X) (m : content_map X)
+                             (t : CBT),
+    OneTerminated k -> mCBT_valid m t -> mCBT_valid (cmap_insert k v m) (insert k v t).
 Proof.
-  intros X k v t H1 H2. inversion H2. rewrite <- H0. clear H0 H t0 H2.
-  rewrite <- (insert_aug_match_com _ _ _ _ H1 H3). apply (cv _ (insert_aug k v aut)).
-  reflexivity. apply (insert_aug_valid _ _ _ _ H1 H3).
+  intros. destruct H0 as [p H0].
+  edestruct (@insert_correct X) with (p' := [] : list bool); try eassumption.
+  - apply is_prefix_nil.
+  - apply ipfz1.
+  - eapply pmCBT_valid_forget_p. eapply proj2. eassumption.
 Qed.
 
-Theorem insert_content : forall (X : Type) (k : list bool) (v : X) (t : CBT),
-  (OneTerminated k) -> (CBT_valid t) ->
-  (equal_content (content (insert k v t)) (insert_map k v (content t))).
+Theorem lookup_spec : forall (X : Type) (k : list bool) (v : X) (m : content_map X)
+                             (t : CBT),
+    OneTerminated k -> mCBT_valid m t -> lookup k t = m k.
 Proof.
-  intros X k v t H1 H2. inversion H2. rewrite <- H0 in *. clear t0 H H0 H2 t.
-  rewrite <- (insert_aug_match_com _ _ _ _ H1 H3). apply (insert_content_aug _ _ _ _ H1 H3).
+  intros. destruct H0 as [p H0]. eapply lookup_correct; eassumption.
 Qed.

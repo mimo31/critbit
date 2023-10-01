@@ -26,35 +26,40 @@ Fixpoint key_eqb (k1 k2 : list bool) : bool :=
 Lemma key_eqb_iff : forall (k1 k2 : list bool),
   (key_eqb k1 k2 = true) <-> (k1 = k2).
 Proof.
-  induction k1 as [| x k1' IH].
-  - intro k2. split.
-    + intro H. destruct k2. reflexivity. simpl in H. discriminate.
-    + intro H. rewrite <- H. simpl. reflexivity.
-  - intro k2. destruct k2.
-    + split.
-      * intro H. simpl in H. discriminate.
-      * intro H. discriminate.
-    + split.
-      * intro H. simpl in H. destruct (eqb x b) eqn:E. simpl in H.
-        apply IH in H. apply eqb_prop in E. f_equal. exact E. exact H.
-        simpl in H. discriminate.
-      * intro H. injection H as H. rewrite H. rewrite <- H0. simpl.
-        assert (eqb b b = true). { apply eqb_reflx. } rewrite H1.
-        simpl. apply IH. reflexivity.
+  induction k1 as [| x k1' IH]; intro k2.
+  - split; intro H.
+    + destruct k2. reflexivity. simpl in H. discriminate.
+    + rewrite <- H. reflexivity.
+  - destruct k2.
+    + split; discriminate.
+    + split; intro H.
+      * simpl in H. apply andb_prop in H. destruct H. apply IH in H0.
+        apply eqb_prop in H. congruence.
+      * inversion H. simpl. apply andb_true_intro. split.
+        -- apply eqb_reflx.
+        -- subst k2. apply IH. reflexivity.
 Qed.
 
 Lemma key_eqb_niff : forall (k1 k2 : list bool),
   (key_eqb k1 k2 = false) <-> (k1 <> k2).
 Proof.
-  split.
-  - intros H1 H2. apply key_eqb_iff in H2. rewrite H2 in H1. discriminate.
-  - intros H1. rewrite <- key_eqb_iff in H1. destruct (key_eqb k1 k2).
-    assert (true = true). reflexivity. apply H1 in H. destruct H.
-    reflexivity.
+  intros.
+  assert (key_eqb k1 k2 = false <-> key_eqb k1 k2 <> true).
+  { split; intro.
+    - rewrite H. discriminate.
+    - apply not_true_is_false. assumption. }
+    pose proof (key_eqb_iff k1 k2). tauto.
 Qed.
 
 Lemma key_eqb_reflx : forall (k : list bool),
   key_eqb k k = true.
 Proof.
   intro k. apply key_eqb_iff. reflexivity.
+Qed.
+
+Lemma key_eqb_sym : forall (k1 k2 : list bool),
+    key_eqb k1 k2 = key_eqb k2 k1.
+Proof.
+  intros. destruct (key_eqb k1 k2) eqn:E1; destruct (key_eqb k2 k1) eqn:E2;
+    try rewrite key_eqb_iff in *; try rewrite key_eqb_niff in *; subst; tauto.
 Qed.

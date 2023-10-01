@@ -26,7 +26,7 @@ Fixpoint find_best_key {X : Type} (k : list bool) (t : @CBT X) : (list bool) :=
   | Branch i l r => find_best_key k (if ith_zer i k then r else l)
   end.
 
-Definition seed_CBT {X : Type} (k : list bool) (v : X) : CBT :=
+Definition seed {X : Type} (k : list bool) (v : X) : CBT :=
   Leaf k v.
 
 Definition is_beforeb (pos : option nat) (bound : nat) : bool :=
@@ -59,21 +59,6 @@ Fixpoint insert_at {X : Type} (k : list bool) (v : X) (i : option nat) (t : CBT)
 Definition critical_bit_CBT {X : Type} (k : list bool) (t : @CBT X) : option nat :=
   critical_bit_zer k (find_best_key k t).
 
-
 (* precond: one-terminated k *)
 Definition insert {X : Type} (k : list bool) (v : X) (t : CBT) : CBT :=
   insert_at k v (critical_bit_CBT k t) t.
-
-
-Definition empty_map {X : Type} (k : list bool) :=
-  @None X.
-
-Definition insert_map
-  {X : Type} (k : list bool) (v : X) (m : (list bool) -> option X) (k' : list bool) :=
-  if key_eqb k' k then Some v else m k'.
-
-Definition content {X : Type} (t : CBT) (k : list bool) := @lookup X k t.
-
-(* only the results on valid keys (i.e., one-terminated) are relevant for content equality *)
-Definition equal_content {X : Type} (c1 c2 : (list bool) -> option X) : Prop :=
-  forall k, (OneTerminated k) -> c1 k = c2 k.

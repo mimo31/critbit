@@ -139,6 +139,13 @@ Proof.
   - apply app_is_prefix_fin.
 Qed.
 
+Lemma ith_from_prefix : forall (p k : list bool) (i : nat),
+    is_prefix_zer p k -> S i <= length p -> ith_zer i p = ith_zer i k.
+Proof.
+  intros p k i H1 H2. apply prefix_iff_take_eq in H1. rewrite <- H1.
+  apply ith_from_take. assumption.
+Qed.
+
 Lemma prefix_zer_trans : forall (p1 p2 p3 : list bool),
   (is_prefix_fin p1 p2) ->
   (is_prefix_zer p2 p3) ->
