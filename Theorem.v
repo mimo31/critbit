@@ -7,14 +7,14 @@ Require Import List.
 Import ListNotations.
 
 Theorem seed_spec : forall (X : Type) (k : list bool) (v : X),
-    OneTerminated k -> mCBT_valid (singleton k v) (seed k v).
+    OneTerminated k -> mCBT_valid X (singleton X k v) (seed X k v).
 Proof.
   intros. exists (ZeroExt k). constructor. assumption.
 Qed.
 
 Theorem insert_spec : forall (X : Type) (k : list bool) (v : X) (m : content_map X)
-                             (t : CBT),
-    OneTerminated k -> mCBT_valid m t -> mCBT_valid (cmap_insert k v m) (insert k v t).
+                             (t : CBT X),
+    OneTerminated k -> mCBT_valid X m t -> mCBT_valid X (cmap_insert X k v m) (insert X k v t).
 Proof.
   intros. destruct H0 as [p H0].
   edestruct insert_correct with (p' := [] : list bool); try eassumption.
@@ -24,8 +24,8 @@ Proof.
 Qed.
 
 Theorem lookup_spec : forall (X : Type) (k : list bool) (v : X) (m : content_map X)
-                             (t : CBT),
-    OneTerminated k -> mCBT_valid m t -> lookup k t = m k.
+                             (t : CBT X),
+    OneTerminated k -> mCBT_valid X m t -> lookup X k t = m k.
 Proof.
   intros. destruct H0 as [p H0]. eapply lookup_correct; eassumption.
 Qed.
