@@ -17,9 +17,9 @@ Theorem insert_spec : forall (X : Type) (k : list bool) (v : X) (m : content_map
     OneTerminated k -> mCBT_valid m t -> mCBT_valid (cmap_insert k v m) (insert k v t).
 Proof.
   intros. destruct H0 as [p H0].
-  edestruct (@insert_correct X) with (p' := [] : list bool); try eassumption.
+  edestruct insert_correct with (p' := [] : list bool); try eassumption.
   - apply is_prefix_nil.
-  - apply ipfz1.
+  - constructor.
   - eapply pmCBT_valid_forget_p. eapply proj2. eassumption.
 Qed.
 

@@ -2,6 +2,7 @@ Require Import Setoid.
 Require Import Bool.
 Require Import List. 
 Require Import PeanoNat.
+Require Import Lia.
 Import ListNotations.
 
 From CritBit Require Import GenerUtil.
@@ -30,30 +31,24 @@ Inductive is_prefix_zer : (list bool) -> (list bool) -> Prop :=
 
 Lemma is_prefix_fin_zer : forall (k p : list bool), is_prefix_fin k p -> is_prefix_zer k p.
 Proof.
-  intros k p H.
-  induction H.
-  - apply ipfz1.
-  - apply ipfz3. exact IHis_prefix_fin.
+  intros. induction H; constructor. assumption.
 Qed.
 
 Lemma is_prefix_fin_length : forall (k p : list bool), is_prefix_fin k p -> length k <= length p.
 Proof.
-  intros k p H.
-  induction H.
-  - simpl. apply le_0_n.
-  - simpl. apply le_n_S. exact IHis_prefix_fin.
+  intros. induction H; simpl; lia.
 Qed.
 
 Lemma is_prefix_zer_fin : forall (k p : list bool),
   (is_prefix_zer k p /\ length k <= length p) -> (is_prefix_fin k p).
 Proof.
-  induction k as [| b k' IH].
-  - intros p [H1 H2]. apply ipff1.
-  - intros p [H1 H2]. destruct p.
-    + simpl in H2. inversion H2.
-    + inversion H1. apply ipff2. apply IH. split.
-      * exact H0.
-      * simpl in H2. apply le_S_n in H2. exact H2.
+  induction k; intros; destruct H.
+  - constructor.
+  - destruct p.
+    + simpl in *. lia.
+    + inversion H. constructor. apply IHk. split.
+      * assumption.
+      * simpl in *. lia.
 Qed.
 
 Definition is_prefix (k : list bool) (p : prefix) : Prop :=
@@ -64,25 +59,20 @@ Definition is_prefix (k : list bool) (p : prefix) : Prop :=
 
 Lemma is_prefix_nil : forall (p : prefix), is_prefix [] p.
 Proof.
-  destruct p.
-  - simpl. apply ipfz1.
-  - simpl. apply ipff1.
+  destruct p; constructor.
 Qed.
 
 Lemma prefix_iff_take_eq : forall (p k : list bool),
   (is_prefix_zer p k <-> take_zer (length p) k = p).
 Proof.
-  induction p as [| b p' IH].
-  - intro k. split.
-    + intro H. reflexivity.
-    + intro H. apply ipfz1.
-  - intro k. split.
-    + intro H. inversion H.
-      * simpl. f_equal. apply IH. exact H3.
-      * simpl. f_equal. apply IH. exact H3.
-    + intro H. simpl in H. destruct k.
-      * simpl in H. injection H as H. rewrite <- H. apply ipfz2. apply IH. exact H0.
-      * injection H as H. rewrite H. apply ipfz3. apply IH. exact H0.
+  induction p.
+  - intros. split; intros.
+    + reflexivity.
+    + constructor.
+  - intros. split; intros.
+    + inversion H; subst; simpl; f_equal; apply IHp; assumption.
+    + simpl in *. destruct k; injection H as H1; subst; constructor;
+        apply IHp; assumption.
 Qed.
 
 Definition is_prefix_zerb (p k : list bool) : bool := key_eqb (take_zer (length p) k) p.
@@ -177,17 +167,16 @@ Lemma prefix_trans : forall (p1 p2 : list bool) (p : prefix),
   (is_prefix p2 p) ->
   (is_prefix p1 p).
 Proof.
-  intros p1 p2 p H1 H2.
-  destruct p.
-  - apply prefix_zer_trans with p2. exact H1. exact H2.
-  - apply prefix_fin_trans with p2. exact H1. exact H2.
+  intros. destruct p; [ eapply prefix_zer_trans | eapply prefix_fin_trans ];
+    eassumption.
 Qed.
 
 Lemma is_prefix_zer_with_ith : forall (p k : list bool),
   (is_prefix_zer p k) -> (is_prefix_zer (p ++ [ith_zer (length p) k]) k).
 Proof.
-  intros p k H. apply prefix_iff_take_eq. rewrite app_length. simpl. rewrite PeanoNat.Nat.add_comm.
-  simpl (_+_). rewrite <- take_with_ith. f_equal. apply prefix_iff_take_eq. exact H.
+  intros. apply prefix_iff_take_eq. rewrite app_length. simpl.
+  replace (length p + 1) with (S (length p)); [| lia]. rewrite <- take_with_ith.
+  f_equal. apply prefix_iff_take_eq. assumption.
 Qed.
 
 Lemma is_prefix_zer_reflx : forall (k : list bool), is_prefix_zer k k.
@@ -268,7 +257,7 @@ Fixpoint critical_bit_fin (k p : list bool) : (option nat) :=
 
 Lemma critical_bit_fin_nil : forall (k : list bool), critical_bit_fin k [] = None.
 Proof.
-  intro k. destruct k. reflexivity. reflexivity.
+  intro k. destruct k; reflexivity.
 Qed.
 
 Lemma length_critical_bit_fin : forall (k p : list bool) (i : nat),
@@ -581,6 +570,6 @@ Proof.
             destruct H3. exact H5.
        -- destruct k2.
          ++ rewrite critical_bit_zer_comm in H3. apply oterm_nil_cbit in H3. destruct H3. exact H0.
-         ++ inversion H2. apply IH. exact H0. exact H6. exact H3.
+         ++ inversion H2. apply IH; assumption.
       * discriminate.
 Qed.
