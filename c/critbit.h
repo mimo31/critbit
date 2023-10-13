@@ -19,8 +19,4 @@ void cbt_free(cbt_t *);
 bool cbt_lookup(const cbt_t *, k_t, v_t *val_out);
 void cbt_insert(cbt_t *, k_t, v_t);
 
-// prints CBT into a file in a user-readable way (debug purposes)
-// prints keys in hex! (but values in decimal)
-void cbt_fprint(const cbt_t *, FILE *);
-
 #endif // CRITBIT_H

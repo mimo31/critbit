@@ -1,4 +1,5 @@
 #include "critbit.h"
+#include "critbit-print.h"
 
 #include <stdlib.h>
 #include <stdio.h>

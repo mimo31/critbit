@@ -9,8 +9,6 @@ cbt_t *cbt_alloc(void) {
 
 static
 void free_node_recursive(node_t *n) {
-  // to make this non-recursive, we would need to build
-  // our own stack or to add pointers to node parents into the tree
   if (!n)
     return;
   if (n->internal) {
@@ -26,10 +24,12 @@ void cbt_free(cbt_t *t) {
 }
 
 static
-const node_t *find_best_node(const node_t *n, const k_t k) {
-  while (n->internal)
-    n = k >> n->cb & 1 ? n->right : n->left;
-  return n;
+const node_t *find_best_node(const node_t *const n, const k_t k) {
+  if (n->internal) {
+    return find_best_node(k >> n->cb & 1 ? n->right : n->left, k);
+  } else {
+    return n;
+  }
 }
 
 bool cbt_lookup(const cbt_t *const t, const k_t k, v_t *const val_out) {
@@ -71,19 +71,21 @@ node_t *alloc_leaf(const k_t k, const v_t v) {
 }
 
 static
-void insert_at(node_t *n, const k_t k, const v_t v, const unsigned cb) {
-  while (n->internal && cb > n->cb)
-    n = k >> n->cb & 1 ? n->right : n->left;
-  node_t *new_leaf = alloc_leaf(k, v), *rest = alloc_node();
-  memcpy(rest, n, sizeof(node_t));
-  n->internal = true;
-  n->cb = cb;
-  if (k >> cb & 1) {
-    n->left = rest;
-    n->right = new_leaf;
+void insert_at(node_t *const n, const k_t k, const v_t v, const unsigned cb) {
+  if (!n->internal || cb < n->cb) {
+    node_t *new_leaf = alloc_leaf(k, v), *rest = alloc_node();
+    memcpy(rest, n, sizeof(node_t));
+    n->internal = true;
+    n->cb = cb;
+    if (k >> cb & 1) {
+      n->left = rest;
+      n->right = new_leaf;
+    } else {
+      n->left = new_leaf;
+      n->right = rest;
+    }
   } else {
-    n->left = new_leaf;
-    n->right = rest;
+    insert_at(k >> n->cb & 1 ? n->right : n->left, k, v, cb);
   }
 }
 
