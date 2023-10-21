@@ -3,7 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+node_t *node_pool;
+
 cbt_t *cbt_alloc(void) {
+  // allocate node pool
+  // (assuming this will be called only once per program run, i.e.,
+  // only one CBT per program run).
+  // Also, we have to assume that the number of unique keys inserted
+  // will be no more than half the number of node allocated here
+  const size_t pool_bcount = (1 << 25) * sizeof(node_t);
+  node_pool = malloc(pool_bcount);
+
+  // write to memory to force allocation
+  // (now instead of when first written later)
+  for (size_t i = 0; i < pool_bcount; i++)
+    ((char*)node_pool)[i] = 17;
+
   return calloc(1, sizeof(cbt_t));
 }
 
@@ -58,7 +73,7 @@ unsigned cb_index(const k_t k1, const k_t k2) {
 
 static
 node_t *alloc_node(void) {
-  return malloc(sizeof(node_t));
+  return node_pool++;
 }
 
 static
@@ -102,5 +117,6 @@ void cbt_insert(cbt_t *const t, const k_t k, const v_t v) {
     return;
   }
 
+  // change t->root to n here
   insert_at(t->root, k, v, cb);
 }
