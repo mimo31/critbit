@@ -102,5 +102,5 @@ void cbt_insert(cbt_t *const t, const k_t k, const v_t v) {
     return;
   }
 
-  insert_at(n, k, v, cb);
+  insert_at(t->root, k, v, cb);
 }

@@ -1,5 +1,5 @@
 #include "critbit.h"
-#include "critbit-print.h"
+#include "critbit-debug.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,6 +17,26 @@ typedef struct teststep {
                      // if look-up: value to expect (don't care if present is false)
 } ts_t;
 
+void report_and_exit_if_wrong(const bool exp_pres, const v_t exp_val,
+    const bool act_pres, const v_t act_val) {
+  if (act_pres && !exp_pres)
+    printf("got a value but shouldn't have\n");
+  else if (!act_pres && exp_pres)
+    printf("didn't get a value but should have\n");
+  else if (act_pres && exp_val != act_val)
+    printf("got a wrong value\n");
+  else
+    return;
+  exit(-1);
+}
+
+void report_and_exit_if_inconsistent(const cbt_t *const t) {
+  if (cbt_check_invariant(t))
+    return;
+  printf("invariant doesn't hold\n");
+  exit(-1);
+}
+
 void runtest(const char *const name, const ts_t *const steps, const unsigned step_count) {
   printf("RUNNING TEST %s\n", name);
   cbt_t *t = cbt_alloc();
@@ -27,16 +47,9 @@ void runtest(const char *const name, const ts_t *const steps, const unsigned ste
     } else {
       v_t got;
       const bool status = cbt_lookup(t, step.k, &got);
-      if (status && !step.present)
-        printf("got a value but shouldn't have\n");
-      else if (!status && step.present)
-        printf("didn't get a value but should have\n");
-      else if (status && got != step.v)
-        printf("got a wrong value\n");
-      else
-        continue;
-      exit(-1);
+      report_and_exit_if_wrong(step.present, step.v, status, got);
     }
+    report_and_exit_if_inconsistent(t);
   }
   cbt_fprint(t, stdout);
   cbt_free(t);
@@ -53,6 +66,42 @@ ts_t present_lookup_step(const k_t k, const v_t v) {
 
 ts_t missing_lookup_step(const k_t k) {
   return (ts_t){ false, k, false, -1 };
+}
+
+typedef struct rand_test {
+  unsigned seed;
+  k_t keys_from, keys_to;
+  size_t opcount;
+  bool check_invariant;
+} rand_test_t;
+
+void run_rand_test(const rand_test_t params) {
+  srand(params.seed);
+  const int num_keys = params.keys_to - params.keys_from;
+  bool *present = calloc(num_keys, sizeof(bool));
+  v_t *values = malloc(sizeof(v_t) * num_keys);
+  cbt_t *t = cbt_alloc();
+  if (params.check_invariant)
+    report_and_exit_if_inconsistent(t);
+  for (size_t i = 0; i < params.opcount; i++) {
+    const size_t ki = ((size_t)rand()) % num_keys;
+    const k_t k = ki + params.keys_to;
+    if (rand() & 1) {
+      const v_t v = rand();
+      present[ki] = true;
+      values[ki] = v;
+      cbt_insert(t, k, v);
+    } else {
+      v_t got;
+      const bool status = cbt_lookup(t, k, &got);
+      report_and_exit_if_wrong(present[ki], values[ki], status, got);
+    }
+    if (params.check_invariant)
+      report_and_exit_if_inconsistent(t);
+  }
+  cbt_free(t);
+  free(present);
+  free(values);
 }
 
 int main(void) {
@@ -93,9 +142,37 @@ int main(void) {
     present_lookup_step(192, 78),
     present_lookup_step(128, 15),
   };
+  const ts_t T4[] = {
+    insert_step(0, 7),
+    insert_step(1, 7),
+    insert_step(8, 7),
+    insert_step(9, 7),
+    insert_step(4, 47),
+    insert_step(5, 57),
+    insert_step(6, 67),
+    present_lookup_step(6, 67),
+    present_lookup_step(5, 57),
+    present_lookup_step(4, 47),
+    present_lookup_step(9, 7),
+    present_lookup_step(8, 7),
+    present_lookup_step(1, 7),
+    present_lookup_step(0, 7)
+  };
   runtest("1", T1, sizeof(T1) / sizeof(ts_t));
   runtest("2", T2, sizeof(T2) / sizeof(ts_t));
   runtest("3", T3, sizeof(T3) / sizeof(ts_t));
+  runtest("4", T4, sizeof(T4) / sizeof(ts_t));
+
+  const rand_test_t RT[] = {
+    { 42, 1024, 2048, 10000, true },
+    { 42, 0, 4096, 1000000, false }
+  };
+
+  for (size_t i = 0; i < sizeof(RT) / sizeof(RT[0]); i++) {
+    printf("rand test: seed = %u, keys in [%lu, %lu), %lu operation(s)\n",
+        RT[i].seed, RT[i].keys_from, RT[i].keys_to, RT[i].opcount);
+    run_rand_test(RT[i]);
+  }
 
   printf("ALL TESTS PASSED\n");
 
